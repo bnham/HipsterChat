@@ -12,17 +12,17 @@
 static CGFloat kVerticalPadding = 4;
 static CGFloat kHorizontalPadding = 5;
 
-static CGFloat kAuthorHeight = 15;
-static CGFloat kAuthorSpacing = 2;
+static CGFloat kTitleHeight = 15;
+static CGFloat kTitleSpacing = 2;
 static CGFloat kDateHeight = 15;
 static CGFloat kDateSpacing = 2;
 
-static CGFloat kTextFieldHeight = 35;
+static CGFloat kTextFieldHeight = 25;
 
 #pragma mark - ChatViewTableCell
 
 @interface ChatTableViewCell : UITableViewCell {
-    UILabel *_authorLabel;
+    UILabel *_titleLabel;
     UILabel *_textLabel;
     UILabel *_dateLabel;
 }
@@ -34,10 +34,10 @@ static CGFloat kTextFieldHeight = 35;
     if ((self = [super initWithStyle:style reuseIdentifier:reuseIdentifier])) {
         UIView *contentView = [self contentView];
         
-        _authorLabel = [[UILabel alloc] init];
-        _authorLabel.font = [UIFont boldSystemFontOfSize:14];
-        _authorLabel.textColor = [UIColor colorWithRed:87.0/255 green:107.0/255 blue:149.0/255 alpha:1.0];
-        [contentView addSubview:_authorLabel];
+        _titleLabel = [[UILabel alloc] init];
+        _titleLabel.font = [UIFont boldSystemFontOfSize:14];
+        _titleLabel.textColor = [UIColor colorWithRed:87.0/255 green:107.0/255 blue:149.0/255 alpha:1.0];
+        [contentView addSubview:_titleLabel];
         
         _textLabel = [[UILabel alloc] init];
         _textLabel.font = [UIFont systemFontOfSize:14];
@@ -60,13 +60,13 @@ static CGFloat kTextFieldHeight = 35;
     
     CGRect bounds = CGRectInset(self.bounds, kHorizontalPadding, kVerticalPadding);
     
-    CGRect authorFrame = bounds;
-    authorFrame.size.height = kAuthorHeight;
-    _authorLabel.frame = authorFrame;
+    CGRect titleFrame = bounds;
+    titleFrame.size.height = kTitleHeight;
+    _titleLabel.frame = titleFrame;
     
     CGRect textLabelFrame = bounds;
-    textLabelFrame.origin.y = CGRectGetMaxY(authorFrame) + kAuthorSpacing;
-    textLabelFrame.size.height = bounds.size.height - kAuthorHeight - kAuthorSpacing - kDateHeight - kDateSpacing;
+    textLabelFrame.origin.y = CGRectGetMaxY(titleFrame) + kTitleSpacing;
+    textLabelFrame.size.height = bounds.size.height - kTitleHeight - kTitleSpacing - kDateHeight - kDateSpacing;
     _textLabel.frame = textLabelFrame;
     
     CGRect dateFrame = bounds;
@@ -75,7 +75,7 @@ static CGFloat kTextFieldHeight = 35;
     _dateLabel.frame = dateFrame;
 }
 
-- (void)setAuthor:(NSString *)author text:(NSString *)text date:(NSDate *)date {
+- (void)setTitle:(NSString *)title text:(NSString *)text date:(NSDate *)date {
     static NSDateFormatter *__formatter = nil;
     if (__formatter == nil) {
         __formatter = [[NSDateFormatter alloc] init];
@@ -84,7 +84,7 @@ static CGFloat kTextFieldHeight = 35;
         [__formatter setDoesRelativeDateFormatting:YES];
     }
     
-    _authorLabel.text = author;
+    _titleLabel.text = title;
     _textLabel.text = text;
     _dateLabel.text = [__formatter stringFromDate:date];
 }
@@ -100,20 +100,110 @@ static CGFloat kTextFieldHeight = 35;
     CGRect rect = CGRectInset([UIScreen mainScreen].bounds, kHorizontalPadding, 0);
     __sizingLabel.text = text;
     
-    return [__sizingLabel sizeThatFits:rect.size].height + kAuthorHeight + kAuthorSpacing + kDateHeight + kDateSpacing + 2 * kVerticalPadding;
+    return [__sizingLabel sizeThatFits:rect.size].height + kTitleHeight + kTitleSpacing + kDateHeight + kDateSpacing + 2 * kVerticalPadding;
 }
 
 @end
 
+#pragma mark - ChatEntryView
+
+@protocol ChatEntryViewDelegate
+- (void)didEnterTitle:(NSString *)title message:(NSString *)message;
+@end
+
+@interface ChatEntryView : UIView<UITextFieldDelegate> {
+    UIView *_topSeparatorView;
+    UITextField *_titleField;
+    UIView *_middleSeparatorView;
+    UITextField *_messageField;
+}
+
+@property (nonatomic, strong) UITextField *titleField;
+@property (nonatomic, strong) UITextField *messageField;
+@property (nonatomic, weak) id<ChatEntryViewDelegate> delegate;
+
+@end
+
+@implementation ChatEntryView
+
+- (id)initWithFrame:(CGRect)frame {
+    if ((self = [super initWithFrame:frame])) {
+        UIColor *separatorColor = [UIColor colorWithRed:178.0/255 green:178.0/255 blue:178.0/255 alpha:1.0];
+        self.backgroundColor = [UIColor colorWithRed:248.0/255 green:248.0/255 blue:248.0/255 alpha:1.0];
+        
+        _topSeparatorView = [[UIView alloc] initWithFrame:CGRectZero];
+        _topSeparatorView.backgroundColor = separatorColor;
+        [self addSubview:_topSeparatorView];
+        
+        _titleField = [[UITextField alloc] initWithFrame:CGRectZero];
+        _titleField.font = [UIFont systemFontOfSize:14];
+        _titleField.placeholder = @"Title";
+        _titleField.returnKeyType = UIReturnKeySend;
+        _titleField.delegate = self;
+        [self addSubview:_titleField];
+        
+        _middleSeparatorView = [[UIView alloc] initWithFrame:CGRectZero];
+        _middleSeparatorView.backgroundColor = separatorColor;
+        [self addSubview:_middleSeparatorView];
+        
+        _messageField = [[UITextField alloc] initWithFrame:CGRectZero];
+        _messageField.font = [UIFont systemFontOfSize:14];
+        _messageField.placeholder = @"Message";
+        _messageField.returnKeyType = UIReturnKeySend;
+        _messageField.delegate = self;
+        
+        [self addSubview:_messageField];
+    }
+    
+    return self;
+}
+
+- (void)dealloc {
+    _titleField.delegate = nil;
+    _messageField.delegate = nil;
+}
+
+- (void)layoutSubviews {
+    CGRect bounds = self.bounds;
+    
+    CGRect topSeparatorFrame = CGRectMake(0, 0, bounds.size.width, 0.5);
+    _topSeparatorView.frame = topSeparatorFrame;
+    
+    CGRect insetBounds = CGRectInset(bounds, kHorizontalPadding, 0);
+    CGRect titleFieldFrame = CGRectMake(insetBounds.origin.x, kVerticalPadding, insetBounds.size.width, kTextFieldHeight);
+    _titleField.frame = titleFieldFrame;
+    
+    CGRect middleSeparatorFrame = CGRectMake(insetBounds.origin.x, CGRectGetMaxY(titleFieldFrame) + kVerticalPadding / 2, insetBounds.size.width, 0.5);
+    _middleSeparatorView.frame = middleSeparatorFrame;
+    
+    CGRect messageFieldFrame = CGRectMake(insetBounds.origin.x, CGRectGetMaxY(titleFieldFrame) + kVerticalPadding, insetBounds.size.width, kTextFieldHeight);
+    _messageField.frame = messageFieldFrame;
+}
+
+- (CGSize)sizeThatFits:(CGSize)boundingSize {
+    CGFloat width = boundingSize.width;
+    CGFloat height = kVerticalPadding + kTextFieldHeight + kVerticalPadding + kTextFieldHeight + kVerticalPadding;
+    
+    return CGSizeMake(width, height);
+}
+
+- (BOOL)textFieldShouldReturn:(UITextField *)textField {
+    [_delegate didEnterTitle:_titleField.text message:_messageField.text];
+    _titleField.text = nil;
+    _messageField.text = nil;
+    [textField resignFirstResponder];
+    
+    return NO;
+}
+
+@end
 
 #pragma mark - ChatViewController
 
-@interface ChatViewController()<UITableViewDataSource, UITableViewDelegate, UITextFieldDelegate> {
+@interface ChatViewController()<UITableViewDataSource, UITableViewDelegate, ChatEntryViewDelegate> {
     NSArray *_messages;
     UITableView *_tableView;
-    UIView *_entryContainerView;
-    UIView *_separatorView;
-    UITextField *_entryField;
+    ChatEntryView *_entryView;
     CGRect _keyboardFrame;
 }
 @end
@@ -124,7 +214,6 @@ static CGFloat kTextFieldHeight = 35;
 {
     if ((self = [super initWithNibName:nibNameOrNil bundle:nibBundleOrNil])) {
         self.title = @"HipsterChat";
-        
         
         NSNotificationCenter *nc = [NSNotificationCenter defaultCenter];
         [nc addObserver:self
@@ -140,6 +229,9 @@ static CGFloat kTextFieldHeight = 35;
 }
 
 - (void)dealloc {
+    _tableView.dataSource = nil;
+    _tableView.delegate = nil;
+    _entryView.delegate = nil;
     [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 
@@ -157,43 +249,29 @@ static CGFloat kTextFieldHeight = 35;
         [_tableView setSeparatorInset:UIEdgeInsetsMake(0, kHorizontalPadding, 0, kHorizontalPadding)];
     }
     
-    _entryField = [[UITextField alloc] initWithFrame:CGRectZero];
-    _entryField.delegate = self;
-    _entryField.placeholder = @"Message";
-    _entryField.font = [UIFont systemFontOfSize:14];
-    _entryField.returnKeyType = UIReturnKeySend;
-    
-    _separatorView = [[UIView alloc] initWithFrame:CGRectZero];
-    _separatorView.backgroundColor = [UIColor colorWithRed:178.0/255 green:178.0/255 blue:178.0/255 alpha:1.0];
-    
-    _entryContainerView = [[UIView alloc] initWithFrame:CGRectZero];
-    _entryContainerView.backgroundColor = [UIColor colorWithRed:248.0/255 green:248.0/255 blue:248.0/255 alpha:1.0f];
-    [_entryContainerView addSubview:_separatorView];
-    [_entryContainerView addSubview:_entryField];
+    _entryView = [[ChatEntryView alloc] initWithFrame:CGRectZero];
+    _entryView.delegate = self;
     
     UIView *containerView = [[UIView alloc] initWithFrame:CGRectZero];
     containerView.backgroundColor = [UIColor whiteColor];
     [containerView addSubview:_tableView];
-    [containerView addSubview:_entryContainerView];
+    [containerView addSubview:_entryView];
     
     self.view = containerView;
 }
 
 - (void)viewDidLayoutSubviews {
     CGRect bounds = self.view.bounds;
-    bounds.size.height -= _keyboardFrame.size.height;
+    CGFloat entryViewHeight = [_entryView sizeThatFits:bounds.size].height;
     
     CGRect tableViewFrame = bounds;
-    tableViewFrame.size.height -= kTextFieldHeight;
+    tableViewFrame.size.height -= entryViewHeight;
+    _tableView.frame = tableViewFrame;
     
-    CGRect textFieldFrame = bounds;
-    textFieldFrame.origin.y = CGRectGetMaxY(bounds) - kTextFieldHeight;
-    textFieldFrame.size.height = kTextFieldHeight;
-    
-    [_tableView setFrame:tableViewFrame];
-    [_entryContainerView setFrame:textFieldFrame];
-    [_separatorView setFrame:CGRectMake(0, 0, bounds.size.width, 0.5)];
-    [_entryField setFrame:CGRectInset(_entryContainerView.bounds, kHorizontalPadding, kVerticalPadding)];
+    CGRect entryViewFrame = bounds;
+    entryViewFrame.origin.y = bounds.size.height - _keyboardFrame.size.height - entryViewHeight;
+    entryViewFrame.size.height = entryViewHeight;
+    _entryView.frame = entryViewFrame;
 }
 
 - (void)viewDidLoad
@@ -204,7 +282,6 @@ static CGFloat kTextFieldHeight = 35;
 
 - (void)refreshWithBlock:(PFBooleanResultBlock)block {
     PFQuery *query = [PFQuery queryWithClassName:@"Chat"];
-    [query includeKey:@"author"];
     [query orderByDescending:@"createdAt"];
     query.cachePolicy = kPFCachePolicyNetworkElseCache;
     
@@ -245,8 +322,9 @@ static CGFloat kTextFieldHeight = 35;
     }
     
     Chat *chat = _messages[indexPath.row];
-    NSString *username = [chat author].username ?: @"Anonymous Coward";
-    [cell setAuthor:username text:chat.text date:chat.updatedAt];
+    NSString *title = chat.title ?: @"Untitled Masterwork";
+    NSString *text = chat.text ?: @"No text";
+    [cell setTitle:title text:text date:chat.updatedAt];
     
     return cell;
 }
@@ -258,30 +336,20 @@ static CGFloat kTextFieldHeight = 35;
 }
 
 #pragma mark -
-#pragma mark UITextFieldDelegate
+#pragma mark ChatEntryViewDelegate
 
-- (BOOL)textFieldShouldReturn:(UITextField *)textField {
-    [textField resignFirstResponder];
-    return NO;
-}
-
-- (BOOL)textFieldShouldEndEditing:(UITextField *)textField {
-    if ([textField.text length] != 0) {
-        Chat *chat = [[Chat alloc] init];
-        chat.author = [PFUser currentUser];
-        chat.text = textField.text;
-        
-        [chat saveInBackgroundWithBlock:^(BOOL succeeded, NSError *error) {
-            if (succeeded) {
-                [self refreshWithBlock:NULL];
-            } else {
-                NSLog(@"Failed to save object: %@", error);
-            }
-        }];
-    }
+- (void)didEnterTitle:(NSString *)title message:(NSString *)message {
+    Chat *chat = [[Chat alloc] init];
+    chat.title = title;
+    chat.text = message;
     
-    textField.text = nil;
-    return YES;
+    [chat saveInBackgroundWithBlock:^(BOOL succeeded, NSError *error) {
+        if (succeeded) {
+            [self refreshWithBlock:NULL];
+        } else {
+            NSLog(@"Failed to save object: %@", error);
+        }
+    }];
 }
 
 #pragma mark -

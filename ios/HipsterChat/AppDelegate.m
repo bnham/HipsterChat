@@ -10,7 +10,7 @@
 #import "ChatViewController.h"
 #import <Parse/Parse.h>
 
-@interface AppDelegate()<PFLogInViewControllerDelegate, PFSignUpViewControllerDelegate> {
+@interface AppDelegate() {
     ChatViewController *_chatViewController;
     UINavigationController *_navController;
 }
@@ -43,40 +43,7 @@
     
     self.window.rootViewController = _navController;
     
-    PFLogInViewController *logInController = [[PFLogInViewController alloc] init];
-    logInController.fields = PFLogInFieldsUsernameAndPassword|PFLogInFieldsLogInButton|PFLogInFieldsSignUpButton;
-    logInController.delegate = self;
-    logInController.signUpController.delegate = self;
-    [_navController presentViewController:logInController animated:YES completion:NULL];
-    
     return YES;
-}
-
-- (void)displayLoginFailureAlert {
-    UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Failed to log in"
-                               message:@"Failed to log in. You will post as Anonymous Coward."
-                              delegate:nil
-                     cancelButtonTitle:@"Okay"
-                     otherButtonTitles:nil];
-    [alert show];
-}
-
-- (void)signUpViewController:(PFSignUpViewController *)signUpController didSignUpUser:(PFUser *)user {
-    [_navController dismissViewControllerAnimated:YES completion:NULL];
-}
-
-- (void)signUpViewController:(PFSignUpViewController *)signUpController didFailToSignUpWithError:(NSError *)error {
-    [_navController dismissViewControllerAnimated:YES completion:NULL];
-    [self displayLoginFailureAlert];
-}
-
-- (void)logInViewController:(PFLogInViewController *)controller didLogInUser:(PFUser *)user {
-    [_navController dismissViewControllerAnimated:YES completion:NULL];
-}
-
-- (void)logInViewController:(PFLogInViewController *)logInController didFailToLogInWithError:(NSError *)error {
-    [_navController dismissViewControllerAnimated:YES completion:NULL];
-    [self displayLoginFailureAlert];
 }
 
 - (void)application:(UIApplication *)application didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)deviceToken
