@@ -10,7 +10,7 @@
 #import <Parse/PFObject+Subclass.h>
 
 @implementation Chat
-@dynamic author;
+@dynamic title;
 @dynamic text;
 
 + (void)load {

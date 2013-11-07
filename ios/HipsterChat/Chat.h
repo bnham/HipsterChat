@@ -9,7 +9,7 @@
 #import <Parse/Parse.h>
 
 @interface Chat : PFObject<PFSubclassing>
-@property (nonatomic, retain) PFUser *author;
+@property (nonatomic, retain) NSString *title;
 @property (nonatomic, retain) NSString *text;
 + (NSString*)parseClassName;
 @end
